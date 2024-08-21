@@ -1,0 +1,75 @@
+org: lillygalietta
+
+service: math-proj-vue
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    CHAT_HISTORY: chat-history-bucket-l
+  deploymentBucket:
+    name: deployments-bucket-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "s3:PutObject"
+            - "s3:GetObject"
+            - "s3:DeleteObject"
+          Resource: [
+            "arn:aws:s3:::${self:provider.environment.CHAT_HISTORY}",
+            "arn:aws:s3:::${self:provider.environment.CHAT_HISTORY}/*"
+          ]
+  httpApi:
+    cors: true
+
+functions:
+  testGoogleAI:
+    handler: index.testGoogleAI
+    events:
+      - httpApi:
+          path: /proj
+          method: post
+  getChatHistory:
+    handler: index.getChatHistory
+    events:
+      - httpApi:
+          path: /chat-history
+          method: get
+  deleteChatHistory:
+    handler: index.deleteChatHistory
+    events:
+      - httpApi:
+          path: /delete-chat-history
+          method: delete
+
+resources:
+  Resources:
+    chatHistortBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.CHAT_HISTORY}
+        AccessControl: Private
+        VersioningConfiguration:
+          Status: Enabled
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - "GET"
+                - "PUT"
+                - "POST"
+                - "DELETE"
+              AllowedOrigins:
+                - "*"
+              AllowedHeaders:
+                - "*"
+              
+package:
+  exclude:
+    - .git/**
+    - .vscode/**
+    - math-vue-app/**
